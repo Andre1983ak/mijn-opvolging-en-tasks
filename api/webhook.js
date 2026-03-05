@@ -5,9 +5,13 @@ export default async function handler(req, res) {
   }
 
   const secret = req.headers["x-webhook-secret"];
-  if (secret !== process.env.WEBHOOK_SECRET) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  const expected = process.env.WEBHOOK_SECRET;
+  
+  return res.status(200).json({ 
+    ontvangen_secret: secret || "LEEG",
+    verwacht_secret: expected || "LEEG",
+    headers: req.headers
+  });
 
   try {
     const { type, content, afzender, onderwerp, context } = req.body;
