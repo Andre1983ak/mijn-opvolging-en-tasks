@@ -1,16 +1,17 @@
 // api/webhook.js
-// Vercel serverless function - ontvangt berichten van Power Automate
-
 export default async function handler(req, res) {
-  // Sta alleen POST requests toe
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const secret = req.headers["x-webhook-secret"];
+  if (secret !== process.env.WEBHOOK_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
     const { type, content, afzender, onderwerp, context } = req.body;
 
-    // Stuur de data door naar de Claude API voor analyse
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -21,9 +22,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        messages: [{
-          role: "user",
-          content: `Je bent een persoonlijke assistent die berichten analyseert en taken inplant.
+        messages: [{ role: "user", content: `Je bent een persoonlijke assistent die berichten analyseert.
 
 Vandaag is: ${new Date().toISOString().split("T")[0]}
 Bron: ${type}
@@ -44,8 +43,7 @@ Geef een JSON-object (ALLEEN JSON, geen uitleg) met:
   "deadline_suggestie": "ISO datum YYYY-MM-DD wanneer dit afgehandeld moet zijn",
   "deadline_reden": "waarom deze datum, max 60 tekens",
   "concept_antwoord": "professioneel concept-antwoord in het Nederlands"
-}`
-        }]
+}` }]
       })
     });
 
